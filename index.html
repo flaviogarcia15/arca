@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <meta name="application-name" content="arca-cofre-local">
+  <meta name="description" content="Arca — cofre de senhas local, criptografado com AES-256-GCM.">
+  <meta name="theme-color" content="#f5f6f8">
+  <title>Arca · Cofre de senhas local</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f7b6c'/%3E%3Cpath d='M16 6.5l7.5 3v5.4c0 4.4-3.1 8-7.5 9.6-4.4-1.6-7.5-5.2-7.5-9.6V9.5z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='14' r='2' fill='white'/%3E%3Cpath d='M16 15.5v3.5' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#view">Pular para o conteúdo</a>
+
+  <!-- Erro de inicialização (contexto inseguro / navegador sem Web Crypto) -->
+  <section id="boot-error" class="boot-error" hidden>
+    <div class="boot-error-card">
+      <span class="boot-error-icon" data-icon="alert"></span>
+      <h1>Não foi possível iniciar o Arca</h1>
+      <p id="boot-error-message"></p>
+    </div>
+  </section>
+
+  <!-- ===================== Tela de acesso ===================== -->
+  <section id="auth" class="auth" aria-label="Acesso ao cofre" hidden>
+    <div class="auth-aside" aria-hidden="true">
+      <div class="auth-aside-brand">
+        <span class="logo-mark" data-icon="logo"></span>
+        <span class="logo-word">Arca</span>
+      </div>
+      <div class="dial">
+        <div class="dial-ring dial-ring-1"></div>
+        <div class="dial-ring dial-ring-2"></div>
+        <div class="dial-ring dial-ring-3"></div>
+        <div class="dial-core"><span data-icon="lock"></span></div>
+      </div>
+      <div class="auth-aside-copy">
+        <p class="auth-aside-title">Suas senhas, em um único arquivo que só você abre.</p>
+        <ul class="auth-facts">
+          <li><span class="fact-k">Cifra</span><span class="fact-v">AES-256-GCM</span></li>
+          <li><span class="fact-k">Derivação</span><span class="fact-v">PBKDF2 · SHA-256</span></li>
+          <li><span class="fact-k">Armazenamento</span><span class="fact-v">Arquivo .txt local</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="auth-panel" id="auth-panel">
+      <div class="auth-top">
+        <div class="auth-top-brand">
+          <span class="logo-mark" data-icon="logo"></span>
+          <span class="logo-word">Arca</span>
+        </div>
+        <button type="button" class="icon-btn theme-toggle" data-action="toggle-theme" aria-label="Alternar tema claro/escuro" title="Alternar tema">
+          <span class="theme-icon-moon" data-icon="moon"></span><span class="theme-icon-sun" data-icon="sun"></span>
+        </button>
+      </div>
+
+      <div class="auth-card">
+        <!-- Boas-vindas -->
+        <div id="auth-welcome" class="auth-screen">
+          <h1 class="auth-title">Abra seu cofre</h1>
+          <p class="auth-lead">Os dados ficam em um arquivo criptografado no seu computador. Nada é enviado para servidores.</p>
+          <div id="auth-recent"></div>
+          <div class="option-list">
+            <button type="button" class="option-tile" data-action="auth-open">
+              <span class="option-icon" data-icon="file"></span>
+              <span class="option-text"><strong>Abrir cofre existente</strong><small>Selecione o arquivo .txt do seu cofre</small></span>
+              <span class="option-chev" data-icon="chevronRight"></span>
+            </button>
+            <button type="button" class="option-tile" data-action="auth-create-start">
+              <span class="option-icon" data-icon="plus"></span>
+              <span class="option-text"><strong>Criar novo cofre</strong><small>Primeira utilização? Comece por aqui</small></span>
+              <span class="option-chev" data-icon="chevronRight"></span>
+            </button>
+          </div>
+          <p class="drop-hint"><span data-icon="upload"></span> ou arraste o arquivo do cofre para esta janela</p>
+          <p id="auth-compat" class="notice notice-info" hidden></p>
+        </div>
+
+        <!-- Desbloqueio -->
+        <form id="auth-unlock" class="auth-screen" novalidate hidden>
+          <button type="button" class="back-link" data-action="auth-back"><span data-icon="arrowLeft"></span> Voltar</button>
+          <h1 class="auth-title">Desbloquear cofre</h1>
+          <div class="file-chip" id="unlock-file"></div>
+          <div class="field">
+            <label for="unlock-password">Senha mestra</label>
+            <div class="input-group">
+              <input type="password" id="unlock-password" class="input input-lg" autocomplete="off" spellcheck="false" autocapitalize="off" aria-describedby="unlock-error unlock-caps" required>
+              <button type="button" class="icon-btn" data-reveal="unlock-password" aria-label="Mostrar senha" aria-pressed="false"><span data-icon="eye"></span></button>
+            </div>
+            <p class="caps-warning" id="unlock-caps" hidden><span data-icon="alert"></span> Caps Lock está ativado</p>
+          </div>
+          <div class="form-alert" id="unlock-error" role="alert" hidden></div>
+          <button type="submit" class="btn btn-primary btn-lg btn-block" id="unlock-submit">
+            <span class="spinner" aria-hidden="true"></span><span class="btn-label">Desbloquear</span>
+          </button>
+          <p class="auth-note" id="unlock-kdf"></p>
+        </form>
+
+        <!-- Criação -->
+        <form id="auth-create" class="auth-screen" novalidate hidden>
+          <button type="button" class="back-link" data-action="auth-back"><span data-icon="arrowLeft"></span> Voltar</button>
+          <h1 class="auth-title">Criar novo cofre</h1>
+          <p class="auth-lead">Escolha uma senha mestra forte. Ela é a única forma de abrir o cofre.</p>
+          <div class="field">
+            <label for="create-name">Nome do cofre <span class="req" aria-hidden="true">*</span></label>
+            <input type="text" id="create-name" class="input" maxlength="60" value="Meu cofre" autocomplete="off" aria-describedby="create-name-error" required>
+            <p class="field-error" id="create-name-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="create-password">Senha mestra <span class="req" aria-hidden="true">*</span></label>
+            <div class="input-group">
+              <input type="password" id="create-password" class="input" autocomplete="new-password" spellcheck="false" autocapitalize="off" aria-describedby="create-password-error create-password-hint" required>
+              <button type="button" class="icon-btn" data-reveal="create-password" aria-label="Mostrar senha" aria-pressed="false"><span data-icon="eye"></span></button>
+            </div>
+            <div class="strength" id="create-strength" data-score="-1">
+              <div class="strength-bar"><span></span><span></span><span></span><span></span></div>
+              <span class="strength-label">Mínimo de 10 caracteres</span>
+            </div>
+            <p class="field-error" id="create-password-error" hidden></p>
+            <p class="field-hint" id="create-password-hint">Use uma frase longa e única. Ela nunca é armazenada.</p>
+          </div>
+          <div class="field">
+            <label for="create-confirm">Confirmar senha mestra <span class="req" aria-hidden="true">*</span></label>
+            <div class="input-group">
+              <input type="password" id="create-confirm" class="input" autocomplete="new-password" spellcheck="false" autocapitalize="off" aria-describedby="create-confirm-error" required>
+              <button type="button" class="icon-btn" data-reveal="create-confirm" aria-label="Mostrar senha" aria-pressed="false"><span data-icon="eye"></span></button>
+            </div>
+            <p class="field-error" id="create-confirm-error" hidden></p>
+          </div>
+          <details class="advanced">
+            <summary><span data-icon="settings"></span> Opções avançadas</summary>
+            <div class="field">
+              <label for="create-iterations">Iterações do PBKDF2</label>
+              <select id="create-iterations" class="input"></select>
+              <p class="field-hint">Mais iterações tornam ataques de força bruta mais lentos, mas aumentam o tempo de desbloqueio.</p>
+            </div>
+          </details>
+          <label class="check">
+            <input type="checkbox" id="create-ack" aria-describedby="create-ack-error">
+            <span>Entendo que, se eu esquecer a senha mestra, <strong>não será possível recuperar</strong> os dados.</span>
+          </label>
+          <p class="field-error" id="create-ack-error" hidden></p>
+          <div class="form-alert" id="create-error" role="alert" hidden></div>
+          <button type="submit" class="btn btn-primary btn-lg btn-block" id="create-submit">
+            <span class="spinner" aria-hidden="true"></span><span class="btn-label">Criar cofre e escolher arquivo</span>
+          </button>
+        </form>
+      </div>
+      <p class="auth-footer"><span data-icon="shield"></span> Criptografia executada localmente no navegador.</p>
+    </div>
+    <div class="drop-overlay" aria-hidden="true"><span data-icon="upload"></span><p>Solte o arquivo do cofre</p></div>
+  </section>
+
+  <!-- ===================== Aplicação ===================== -->
+  <div id="app" class="app" hidden>
+    <aside id="sidebar" class="sidebar" aria-label="Navegação do cofre">
+      <div class="sidebar-brand">
+        <span class="logo-mark" data-icon="logo"></span>
+        <span class="logo-word">Arca</span>
+        <button type="button" class="icon-btn only-mobile sidebar-close" data-action="close-sidebar" aria-label="Fechar menu"><span data-icon="x"></span></button>
+      </div>
+      <div class="vault-card" id="vault-card"></div>
+      <nav class="nav" aria-label="Seções">
+        <button type="button" class="nav-item" data-action="nav" data-nav="home"><span data-icon="home"></span><span class="nav-label">Visão geral</span></button>
+        <button type="button" class="nav-item" data-action="nav" data-nav="all"><span data-icon="layers"></span><span class="nav-label">Todas as credenciais</span><span class="nav-count" id="count-all"></span></button>
+        <button type="button" class="nav-item" data-action="nav" data-nav="favorites"><span data-icon="star"></span><span class="nav-label">Favoritos</span><span class="nav-count" id="count-favorites"></span></button>
+        <button type="button" class="nav-item" data-action="open-generator"><span data-icon="sparkles"></span><span class="nav-label">Gerador de senhas</span></button>
+      </nav>
+      <div class="nav-section">
+        <div class="nav-section-head">
+          <span>Projetos</span>
+          <button type="button" class="icon-btn icon-btn-xs" data-action="new-project" aria-label="Novo projeto" title="Novo projeto"><span data-icon="plus"></span></button>
+        </div>
+        <div id="nav-projects" class="nav-list"></div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-head"><span>Categorias</span></div>
+        <div id="nav-categories" class="nav-list"></div>
+      </div>
+      <div class="sidebar-foot">
+        <button type="button" class="nav-item" data-action="open-settings"><span data-icon="settings"></span><span class="nav-label">Configurações</span></button>
+      </div>
+    </aside>
+    <div class="sidebar-scrim" data-action="close-sidebar"></div>
+
+    <div class="main">
+      <header class="topbar">
+        <button type="button" class="icon-btn only-mobile" data-action="open-sidebar" aria-label="Abrir menu"><span data-icon="menu"></span></button>
+        <div class="search" role="search">
+          <span class="search-icon" data-icon="search"></span>
+          <input type="search" id="global-search" class="search-input" placeholder="Pesquisar credenciais, usuários, projetos…" aria-label="Pesquisar no cofre" autocomplete="off" spellcheck="false">
+          <kbd class="search-kbd" aria-hidden="true">/</kbd>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" id="save-status" class="save-status" data-action="save"></button>
+          <button type="button" class="icon-btn hide-xs" data-action="open-generator" aria-label="Gerador de senhas" title="Gerador de senhas"><span data-icon="sparkles"></span></button>
+          <button type="button" class="icon-btn theme-toggle" data-action="toggle-theme" aria-label="Alternar tema claro/escuro" title="Alternar tema">
+            <span class="theme-icon-moon" data-icon="moon"></span><span class="theme-icon-sun" data-icon="sun"></span>
+          </button>
+          <button type="button" class="icon-btn" data-action="lock" aria-label="Bloquear cofre" title="Bloquear cofre"><span data-icon="lock"></span></button>
+          <button type="button" class="btn btn-primary" data-action="new-item"><span data-icon="plus"></span><span class="hide-sm">Nova credencial</span></button>
+        </div>
+      </header>
+      <main id="view" class="view" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <div id="drawer-root"></div>
+  <div id="modal-root"></div>
+  <div id="toast-region" class="toasts" aria-live="polite" aria-atomic="false"></div>
+  <input type="file" id="file-input" accept=".txt,text/plain" hidden>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
