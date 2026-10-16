@@ -1,0 +1,7 @@
+# Publica somente a aplicação. Arquivos de cofre e o script local nunca vão para a Vercel.
+*.txt
+*.state
+pass/
+iniciar-cofre.sh
+.git
+.github

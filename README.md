@@ -16,7 +16,7 @@ Gerenciador de senhas inspirado na experiência do Bitwarden, executado 100% no 
 | `iniciar-cofre.sh` | Inicia o servidor local em `127.0.0.1` e abre o navegador |
 | `README.md` | Esta documentação |
 
-Nenhum arquivo extra foi necessário: o servidor HTTP (com cabeçalhos de segurança) está embutido no próprio `iniciar-cofre.sh`, e os ícones são SVG inline gerados pelo `app.js`.
+Nenhum arquivo extra foi necessário: o servidor HTTP (com cabeçalhos de segurança) está embutido no próprio `iniciar-cofre.sh`, e os ícones são SVG inline gerados pelo `app.js` (os ícones de projeto usam os paths do [Lucide](https://lucide.dev), embutidos no próprio arquivo — nenhuma chamada de rede).
 
 ## Requisitos
 

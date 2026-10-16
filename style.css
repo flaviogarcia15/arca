@@ -903,13 +903,17 @@ input[type="number"].input { -moz-appearance: textfield; }
 .swatch input:checked + .swatch-dot { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--pc); }
 .swatch input:focus-visible + .swatch-dot { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
 
+.icon-picker { display: flex; flex-direction: column; gap: 8px; }
 .icon-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 8px; }
-.icon-choice { position: relative; cursor: pointer; }
-.icon-choice input { position: absolute; opacity: 0; pointer-events: none; }
+.icon-choice { position: relative; cursor: pointer; background: none; border: none; padding: 0; margin: 0; font: inherit; }
 .icon-choice-body { display: flex; align-items: center; justify-content: center; height: 44px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--text-2); transition: all var(--dur); }
 .icon-choice:hover .icon-choice-body { background: var(--surface-2); color: var(--text); }
-.icon-choice input:checked + .icon-choice-body { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--accent); }
-.icon-choice input:focus-visible + .icon-choice-body { box-shadow: var(--ring); }
+.icon-choice.is-selected .icon-choice-body { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--accent); }
+.icon-choice:focus-visible .icon-choice-body { box-shadow: var(--ring); }
+.icon-picker-hint { font-size: 12px; color: var(--text-3); }
+.icon-picker-empty { grid-column: 1 / -1; font-size: 13px; color: var(--text-3); padding: 8px 2px; }
+.icon-search.search { max-width: none; }
+.icon-search .search-input { height: 36px; }
 
 .project-preview { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: var(--radius-lg); background: var(--surface-2); border: 1px solid var(--border); }
 .project-preview > div { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
